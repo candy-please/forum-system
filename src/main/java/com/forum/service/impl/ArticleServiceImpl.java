@@ -88,4 +88,19 @@ public class ArticleServiceImpl implements ArticleService {
 
         return Result.success("查询文章列表成功", resultPage);
     }
+
+    @Override
+    public Result detail(Long id) {
+        Article article = articleMapper.selectById(id);
+
+        if (article == null || article.getDeleted() == 1) {
+            return Result.error("文章不存在");
+        }
+        Integer viewCount = article.getViewCount() == null ? 0 : article.getViewCount();
+        article.setViewCount(viewCount + 1);
+        article.setUpdateTime(new Date());
+        articleMapper.updateById(article);
+
+        return Result.success("查询文章详情成功", article);
+    }
 }

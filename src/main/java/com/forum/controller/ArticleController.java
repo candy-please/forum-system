@@ -32,4 +32,9 @@ public class ArticleController {
     public Result list(ArticleQueryDTO dto) {
         return articleService.list(dto);
     }
+
+    @GetMapping("/detail/{id}")
+    public Result detail(@PathVariable Long id) {
+        return articleService.detail(id);
+    }
 }

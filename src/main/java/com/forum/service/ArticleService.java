@@ -7,4 +7,5 @@ import com.forum.dto.ArticleQueryDTO;
 public interface ArticleService {
     Result add(ArticleAddDTO dto,String username);
     Result list(ArticleQueryDTO dto);
+    Result detail(Long id);
 }
