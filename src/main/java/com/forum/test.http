@@ -1,0 +1,3 @@
+
+GET http://localhost:8080/user/current
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0MDEiLCJleHAiOjE3NzQ3MDU2NzR9.Ni__rYYE4VbvNhr03GpehIpHVQ-cNAEx7FFUQfFQLKAHzjTvPzx_RS5BPwFJneAHDi6uujMdFGBiv1rK4x8ooA
