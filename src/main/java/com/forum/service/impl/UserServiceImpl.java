@@ -8,6 +8,7 @@ import com.forum.entity.User;
 import com.forum.mapper.UserMapper;
 import com.forum.service.UserService;
 import com.forum.utils.JwtUtil;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,14 +27,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Result register(UserRegisterDTO dto){
-        if(dto.getUserName()==null || dto.getUserName().trim().isEmpty())
-            return Result.error("用户名不能为空");
-        if(dto.getPassword()==null || dto.getPassword().trim().isEmpty())
-            return Result.error("密码不能为空");
-        if(dto.getEmail()==null || dto.getEmail().trim().isEmpty())
-            return Result.error("邮箱不能为空");
-        if(dto.getPassword().length()<6)
-            return Result.error("密码必须大于等于六位数");
         User existUser=userMapper.selectOne(new QueryWrapper<User>().eq("user_name",dto.getUserName()));
         if (existUser!=null)
             return Result.error("用户名已存在！");
@@ -45,32 +38,35 @@ public class UserServiceImpl implements UserService {
         user.setRole(1);
         user.setStatus(1);
         user.setDeleted(0);
-        userMapper.insert(user);
+
+        try {
+            userMapper.insert(user);
+        } catch (DuplicateKeyException e) {
+            return Result.error("用户名已存在！");
+        }
         return Result.success("注册成功");
     }
 
     @Override
-    public Result login(UserLoginDTO dto){
-        if (dto.getUserName() == null || dto.getUserName().trim().isEmpty()) {
-            return Result.error("用户名不能为空");
-        }
-        if (dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
-            return Result.error("密码不能为空");
-        }
+    public Result login(UserLoginDTO dto) {
 
         User user = userMapper.selectOne(
                 new QueryWrapper<User>().eq("user_name", dto.getUserName())
         );
 
-        if (user == null) {
-            return Result.error("用户不存在");
+        if (user == null || user.getDeleted() == 1) {
+            return Result.error(400, "用户名或密码错误");
+        }
+
+        if (user.getStatus() == 0) {
+            return Result.error(400, "账号已被禁用");
         }
 
         if (!encoder.matches(dto.getPassword(), user.getPassword())) {
-            return Result.error("密码错误");
+            return Result.error(400, "用户名或密码错误");
         }
 
-        String token = JwtUtil.createToken(user.getUserName());
+        String token = JwtUtil.createToken(String.valueOf(user.getId()));
 
         user.setLastLoginDate(new Date());
         userMapper.updateById(user);
@@ -84,7 +80,6 @@ public class UserServiceImpl implements UserService {
 
         return Result.success("登录成功", data);
     }
-
 
     @Override
     public Result getCurrentUser(String userName){

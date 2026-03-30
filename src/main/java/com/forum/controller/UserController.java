@@ -9,6 +9,7 @@ import com.forum.service.UserService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import javax.annotation.Resource;
+import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,13 +21,13 @@ public class UserController {
 
     /* 注册 */
     @PostMapping("/register")
-    public Result register(@RequestBody UserRegisterDTO dto){
+    public Result register(@RequestBody @Valid UserRegisterDTO dto){
         return userService.register(dto);
     }
 
     /* 登录 */
     @PostMapping("/login")
-    public Result login(@RequestBody UserLoginDTO dto){
+    public Result login(@RequestBody @Valid UserLoginDTO dto){
 
         return userService.login(dto);
     }

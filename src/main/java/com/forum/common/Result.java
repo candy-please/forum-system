@@ -26,4 +26,12 @@ public class Result<T> {
         r.setMessage(msg);
         return r;
     }
+
+    public static <T> Result<T> error(Integer code, String message) {
+        Result<T> result = new Result<>();
+        result.setCode(code);
+        result.setMessage(message);
+        result.setData(null);
+        return result;
+    }
 }
