@@ -30,11 +30,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 System.out.println("截取后的token: " + token);
 
                 Claims claims = JwtUtil.parseToken(token);
-                String username = claims.getSubject();
-                System.out.println("解析出的username: " + username);
+                String userId = claims.getSubject();
+                System.out.println("解析出的userId: " + userId);
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(username, null, null);
+                        new UsernamePasswordAuthenticationToken(userId, null, null);
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 System.out.println("已设置到 SecurityContextHolder");
