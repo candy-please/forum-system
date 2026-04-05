@@ -3,12 +3,14 @@ package com.forum.service;
 import com.forum.common.Result;
 import com.forum.dto.UserLoginDTO;
 import com.forum.dto.UserRegisterDTO;
+import com.forum.vo.LoginVO;
+import com.forum.vo.UserVO;
 import org.springframework.security.core.Authentication;
 
 public interface UserService {
     Result register(UserRegisterDTO dto);
-    Result login(UserLoginDTO dto);
+    LoginVO login(UserLoginDTO dto);
 
-    Result getCurrentUser(String userName);
+    UserVO getCurrentUser(Long userId);
 
 }

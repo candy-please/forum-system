@@ -2,12 +2,15 @@ package com.forum.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.forum.common.Result;
+import com.forum.common.exception.BusinessException;
 import com.forum.dto.UserLoginDTO;
 import com.forum.dto.UserRegisterDTO;
 import com.forum.entity.User;
 import com.forum.mapper.UserMapper;
 import com.forum.service.UserService;
 import com.forum.utils.JwtUtil;
+import com.forum.vo.LoginVO;
+import com.forum.vo.UserVO;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -48,48 +51,53 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Result login(UserLoginDTO dto) {
+    public LoginVO login(UserLoginDTO dto) {
 
         User user = userMapper.selectOne(
                 new QueryWrapper<User>().eq("user_name", dto.getUserName())
         );
 
         if (user == null || user.getDeleted() == 1) {
-            return Result.error(400, "用户名或密码错误");
+            throw new BusinessException("用户名或密码错误");
         }
 
         if (user.getStatus() == 0) {
-            return Result.error(400, "账号已被禁用");
+            throw new BusinessException("账号已被禁用");
         }
 
         if (!encoder.matches(dto.getPassword(), user.getPassword())) {
-            return Result.error(400, "用户名或密码错误");
+            throw new BusinessException("用户名或密码错误");
         }
-
         String token = JwtUtil.createToken(String.valueOf(user.getId()));
 
         user.setLastLoginDate(new Date());
         userMapper.updateById(user);
+        LoginVO loginVO=new LoginVO();
+        loginVO.setUserId(user.getId());
+        loginVO.setRole(user.getRole());
+        loginVO.setToken(token);
+        loginVO.setUserName(user.getUserName());
+        loginVO.setEmail(user.getEmail());
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("token", token);
-        data.put("userId", user.getId());
-        data.put("userName", user.getUserName());
-        data.put("email", user.getEmail());
-        data.put("role", user.getRole());
-
-        return Result.success("登录成功", data);
+        return loginVO;
     }
 
     @Override
-    public Result getCurrentUser(String userName){
-        User user=userMapper.selectOne(new QueryWrapper<User>().eq("user_name",userName));
-        if(user==null) {
-                return Result.error("用户不存在");
-            }
-        user.setPassword(null);
+    public UserVO getCurrentUser(Long userId){
+        User user = userMapper.selectById(userId);
 
-        return Result.success("获取当前用户成功", user);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        UserVO userVO = new UserVO();
+        userVO.setId(user.getId());
+        userVO.setUserName(user.getUserName());
+        userVO.setEmail(user.getEmail());
+        userVO.setAvatar(user.getAvatar());
+        userVO.setRole(user.getRole());
+
+        return userVO;
         }
     }
 
