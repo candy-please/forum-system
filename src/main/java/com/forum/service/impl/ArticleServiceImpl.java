@@ -2,6 +2,7 @@ package com.forum.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.forum.common.PageResult;
 import com.forum.common.Result;
 import com.forum.dto.ArticleAddDTO;
 import com.forum.dto.ArticleQueryDTO;
@@ -12,10 +13,13 @@ import com.forum.mapper.ArticleMapper;
 import com.forum.mapper.CategoryMapper;
 import com.forum.mapper.UserMapper;
 import com.forum.service.ArticleService;
+import com.forum.vo.ArticleVO;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ArticleServiceImpl implements ArticleService {
@@ -86,7 +90,41 @@ public class ArticleServiceImpl implements ArticleService {
 
         Page<Article> resultPage = articleMapper.selectPage(page, wrapper);
 
-        return Result.success("查询文章列表成功", resultPage);
+        List<ArticleVO> voList = resultPage.getRecords().stream().map(article -> {
+            ArticleVO vo = new ArticleVO();
+            vo.setId(article.getId());
+            vo.setTitle(article.getTitle());
+
+            String content = article.getContent();
+            if (content != null && content.length() > 100) {
+                vo.setSummary(content.substring(0, 100));
+            } else {
+                vo.setSummary(content);
+            }
+
+            vo.setCategoryId(article.getCategoryId());
+            vo.setUserId(article.getUserId());
+            vo.setViewCount(article.getViewCount());
+            vo.setCreateTime(article.getCreateTime());
+
+            Category category = categoryMapper.selectById(article.getCategoryId());
+            if (category != null) {
+                vo.setCategoryName(category.getName());
+            }
+
+            User user = userMapper.selectById(article.getUserId());
+            if (user != null) {
+                vo.setAuthorName(user.getUserName());
+            }
+
+            return vo;
+        }).collect(Collectors.toList());
+
+        PageResult<ArticleVO> pageResult = new PageResult<>();
+        pageResult.setTotal(resultPage.getTotal());
+        pageResult.setRecords(voList);
+
+        return Result.success("查询文章列表成功", pageResult);
     }
 
     @Override
