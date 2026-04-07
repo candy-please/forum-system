@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/article")
@@ -29,7 +30,7 @@ public class ArticleController {
     }
 
     @GetMapping("/list")
-    public Result list(ArticleQueryDTO dto) {
+    public Result list(@Valid ArticleQueryDTO dto) {
         return articleService.list(dto);
     }
 

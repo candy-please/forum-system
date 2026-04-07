@@ -13,7 +13,9 @@ import com.forum.mapper.ArticleMapper;
 import com.forum.mapper.CategoryMapper;
 import com.forum.mapper.UserMapper;
 import com.forum.service.ArticleService;
+import com.forum.vo.ArticleDetailVO;
 import com.forum.vo.ArticleVO;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -32,19 +34,10 @@ public class ArticleServiceImpl implements ArticleService {
     @Resource
     private CategoryMapper categoryMapper;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
     public Result add(ArticleAddDTO dto, String userName){
-        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
-            return Result.error("文章标题不能为空");
-        }
-
-        if (dto.getContent() == null || dto.getContent().trim().isEmpty()) {
-            return Result.error("文章内容不能为空");
-        }
-
-        if (dto.getCategoryId() == null) {
-            return Result.error("分类不能为空");
-        }
-
         User user = userMapper.selectOne(
                 new QueryWrapper<User>().eq("user_name", userName)
         );
@@ -129,16 +122,53 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public Result detail(Long id) {
+
         Article article = articleMapper.selectById(id);
 
         if (article == null || article.getDeleted() == 1) {
             return Result.error("文章不存在");
         }
-        Integer viewCount = article.getViewCount() == null ? 0 : article.getViewCount();
-        article.setViewCount(viewCount + 1);
-        article.setUpdateTime(new Date());
-        articleMapper.updateById(article);
 
-        return Result.success("查询文章详情成功", article);
+        // 1. Redis key 统一格式
+        String key = "article:viewCount:" + id;
+
+        // 2. 先判断 Redis 中有没有这个浏览量
+        String redisValue = stringRedisTemplate.opsForValue().get(key);
+
+        Integer viewCount;
+        if (redisValue == null) {
+            // 第一次访问：先把数据库中的浏览量放入 Redis
+            stringRedisTemplate.opsForValue().set(key, String.valueOf(article.getViewCount()));
+        }
+
+        // 3. 再自增
+        Long newCount = stringRedisTemplate.opsForValue().increment(key);
+        viewCount = newCount.intValue();
+
+        System.out.println("Redis当前值 = " + viewCount);
+
+        // ===== VO封装开始 =====
+        ArticleDetailVO vo = new ArticleDetailVO();
+        vo.setId(article.getId());
+        vo.setTitle(article.getTitle());
+        vo.setContent(article.getContent());
+        vo.setCategoryId(article.getCategoryId());
+        vo.setUserId(article.getUserId());
+        vo.setViewCount(viewCount);   // 这里必须用最新值
+        vo.setCreateTime(article.getCreateTime());
+
+        // 分类名称
+        Category category = categoryMapper.selectById(article.getCategoryId());
+        if (category != null) {
+            vo.setCategoryName(category.getName());
+        }
+
+        // 作者名称
+        User user = userMapper.selectById(article.getUserId());
+        if (user != null) {
+            vo.setAuthorName(user.getUserName());
+        }
+
+        return Result.success("查询文章详情成功", vo);
     }
 }

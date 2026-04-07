@@ -18,7 +18,7 @@ public class CommentController {
     private CommentService commentService;
 
     @PostMapping("/add")
-    public Result add(@RequestBody CommentAddDTO dto, Authentication authentication) {
+    public Result add(@RequestBody @Valid CommentAddDTO dto, Authentication authentication) {
         if (authentication == null) {
             return Result.error("未登录");
         }
