@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.forum.common.PageResult;
 import com.forum.common.Result;
 import com.forum.common.exception.BusinessException;
+import com.forum.constants.RedisKeyConstants;
 import com.forum.dto.ArticleAddDTO;
 import com.forum.dto.ArticleQueryDTO;
 import com.forum.dto.ArticleUpdateDTO;
@@ -14,7 +15,9 @@ import com.forum.entity.User;
 import com.forum.mapper.ArticleMapper;
 import com.forum.mapper.CategoryMapper;
 import com.forum.mapper.UserMapper;
+import com.forum.service.ArticleLikeService;
 import com.forum.service.ArticleService;
+import com.forum.utils.LoginUserUtil;
 import com.forum.vo.ArticleDetailVO;
 import com.forum.vo.ArticleVO;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -39,6 +42,9 @@ public class ArticleServiceImpl implements ArticleService {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    private ArticleLikeService articleLikeService;
+
     public Result add(ArticleAddDTO dto, String userName){
         User user = userMapper.selectOne(
                 new QueryWrapper<User>().eq("user_name", userName)
@@ -60,6 +66,7 @@ public class ArticleServiceImpl implements ArticleService {
         article.setCategoryId(dto.getCategoryId());
         article.setStatus(1);
         article.setViewCount(0);
+
         article.setCreateTime(new Date());
         article.setUpdateTime(new Date());
         article.setDeleted(0);
@@ -89,6 +96,7 @@ public class ArticleServiceImpl implements ArticleService {
             ArticleVO vo = new ArticleVO();
             vo.setId(article.getId());
             vo.setTitle(article.getTitle());
+            vo.setLikeCount(article.getLikeCount());
 
             String content = article.getContent();
             if (content != null && content.length() > 100) {
@@ -128,36 +136,55 @@ public class ArticleServiceImpl implements ArticleService {
         Article article = articleMapper.selectById(id);
 
         if (article == null || article.getDeleted() == 1) {
-            return Result.error("文章不存在");
+            throw new BusinessException(400, "文章不存在");
         }
 
-        // 1. Redis key 统一格式
+        // ===== 浏览量处理 =====
         String key = "article:viewCount:" + id;
 
-        // 2. 先判断 Redis 中有没有这个浏览量
         String redisValue = stringRedisTemplate.opsForValue().get(key);
 
-        Integer viewCount;
+        Long newCount;
         if (redisValue == null) {
-            // 第一次访问：先把数据库中的浏览量放入 Redis
             stringRedisTemplate.opsForValue().set(key, String.valueOf(article.getViewCount()));
+            newCount = Long.valueOf(article.getViewCount());
+        } else {
+            newCount = stringRedisTemplate.opsForValue().increment(key);
         }
 
-        // 3. 再自增
-        Long newCount = stringRedisTemplate.opsForValue().increment(key);
-        viewCount = newCount.intValue();
+        Integer viewCount = newCount.intValue();
 
-        System.out.println("Redis当前值 = " + viewCount);
-
-        // ===== VO封装开始 =====
+        // ===== VO封装 =====
         ArticleDetailVO vo = new ArticleDetailVO();
         vo.setId(article.getId());
         vo.setTitle(article.getTitle());
         vo.setContent(article.getContent());
         vo.setCategoryId(article.getCategoryId());
         vo.setUserId(article.getUserId());
-        vo.setViewCount(viewCount);   // 这里必须用最新值
+
+        String likeCountKey = RedisKeyConstants.ARTICLE_LIKE_COUNT_PREFIX + id;
+        String redisLikeCount = stringRedisTemplate.opsForValue().get(likeCountKey);
+
+        Integer likeCount;
+        if (redisLikeCount == null) {
+            likeCount = article.getLikeCount() == null ? 0 : article.getLikeCount();
+            stringRedisTemplate.opsForValue().set(likeCountKey, likeCount.toString());
+        } else {
+            likeCount = Integer.parseInt(redisLikeCount);
+        }
+        vo.setLikeCount(article.getLikeCount());
+
+
+        vo.setViewCount(viewCount);
         vo.setCreateTime(article.getCreateTime());
+
+        // ===== 是否点赞 =====
+        Long currentUserId = LoginUserUtil.getCurrentUserIdOrNull();
+        boolean isLiked = false;
+        if (currentUserId != null) {
+            isLiked = articleLikeService.hasLiked(article.getId(), currentUserId);
+        }
+        vo.setIsLiked(isLiked);
 
         // 分类名称
         Category category = categoryMapper.selectById(article.getCategoryId());

@@ -1,12 +1,14 @@
 package com.forum.entity;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.util.Date;
 
 
 @Data
+@TableName("article")
 public class Article {
 
     private Long id;
@@ -22,6 +24,8 @@ public class Article {
     private Integer status;
 
     private Integer viewCount;
+
+    private Integer likeCount;
 
     private Date createTime;
 

@@ -24,5 +24,9 @@ public class ArticleVO {
 
     private Integer viewCount;
 
+    private Integer likeCount;
+
+    private Boolean isLiked;
+
     private Date createTime;
 }

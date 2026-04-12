@@ -15,10 +15,10 @@ public class JwtUtil {
     private static final long EXPIRE = 1000 * 60 * 60 * 24;
 
     // 生成token
-    public static String createToken(String username) {
+    public static String createToken(String userId) {
 
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(userId)
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRE))
                 .signWith(SignatureAlgorithm.HS512, SECRET)
                 .compact();

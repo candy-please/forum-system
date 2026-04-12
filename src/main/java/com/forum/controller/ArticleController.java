@@ -4,6 +4,7 @@ import com.forum.common.Result;
 import com.forum.dto.ArticleAddDTO;
 import com.forum.dto.ArticleQueryDTO;
 import com.forum.dto.ArticleUpdateDTO;
+import com.forum.service.ArticleLikeService;
 import com.forum.service.ArticleService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,9 @@ public class ArticleController {
 
     @Resource
     private ArticleService articleService;
+
+    @Resource
+    private ArticleLikeService articleLikeService;
 
     @PostMapping("/add")
     public Result add(@RequestBody ArticleAddDTO dto, Authentication authentication) {
@@ -58,5 +62,20 @@ public class ArticleController {
 
         Long userId = Long.valueOf(authentication.getPrincipal().toString());
         return articleService.delete(id, userId);
+    }
+
+    @PostMapping("/like/{id}")
+    public Result like(@PathVariable Long id) {
+        return articleLikeService.likeArticle(id);
+    }
+
+    @PostMapping("/unlike/{id}")
+    public Result unlike(@PathVariable Long id) {
+        return articleLikeService.unlikeArticle(id);
+    }
+
+    @GetMapping("/isLiked/{id}")
+    public Result isLiked(@PathVariable Long id) {
+        return articleLikeService.isLiked(id);
     }
 }
