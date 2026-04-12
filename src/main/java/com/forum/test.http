@@ -1,1 +1,2 @@
-GET http://localhost:8080/article/detail/2038143052006088705
+DELETE http://localhost:8080/article/delete/2038143052006088705
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIyMDM3NTE5Mjk4OTI2MzMzOTUzIiwiZXhwIjoxNzc2MDUwODQyfQ.dAmoKVIe7o0K2VVjcs6i-55-TKIsXAHOaNXl6rAt3gtx7hRp51dIL6o4u_xuM5luYklzHSSOWAxtH2iIFkzrlA

@@ -3,6 +3,7 @@ package com.forum.controller;
 import com.forum.common.Result;
 import com.forum.dto.ArticleAddDTO;
 import com.forum.dto.ArticleQueryDTO;
+import com.forum.dto.ArticleUpdateDTO;
 import com.forum.service.ArticleService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -37,5 +38,25 @@ public class ArticleController {
     @GetMapping("/detail/{id}")
     public Result detail(@PathVariable Long id) {
         return articleService.detail(id);
+    }
+
+    @PutMapping("/update")
+    public Result update(@RequestBody @Valid ArticleUpdateDTO articleUpdateDTO,Authentication authentication){
+        if(authentication==null)
+        {       return Result.error("用户未登录");
+    }
+        Long userId=Long.valueOf(authentication.getPrincipal().toString());
+
+        return articleService.update(articleUpdateDTO,userId);
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public Result delete(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return Result.error("用户未登录");
+        }
+
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        return articleService.delete(id, userId);
     }
 }

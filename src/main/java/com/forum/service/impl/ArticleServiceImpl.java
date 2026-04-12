@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.forum.common.PageResult;
 import com.forum.common.Result;
+import com.forum.common.exception.BusinessException;
 import com.forum.dto.ArticleAddDTO;
 import com.forum.dto.ArticleQueryDTO;
+import com.forum.dto.ArticleUpdateDTO;
 import com.forum.entity.Article;
 import com.forum.entity.Category;
 import com.forum.entity.User;
@@ -170,5 +172,49 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         return Result.success("查询文章详情成功", vo);
+    }
+
+    @Override
+    public Result update(ArticleUpdateDTO articleUpdateDTO, Long userId){
+        Article article=articleMapper.selectById(articleUpdateDTO.getId());
+        if(article==null || article.getDeleted()==-1) {
+            return Result.error("文章不存在");
+            }
+
+        if(!article.getUserId().equals(userId)) {
+            return Result.error(403,"无更改他人文章权限");
+            }
+
+        Category category=categoryMapper.selectById(article.getCategoryId());
+        if (category==null){
+            return Result.error("该分类不存在");
+        }
+
+        article.setTitle(articleUpdateDTO.getTitle());
+        article.setContent(articleUpdateDTO.getContent());
+        article.setCategoryId(articleUpdateDTO.getCategoryId());
+        article.setUpdateTime(new Date());
+        articleMapper.updateById(article);
+        return Result.success("修改成功");
+
+
+
+    }
+
+    @Override
+    public Result delete(Long id, Long userId) {
+        Article article = articleMapper.selectById(id);
+
+        if (article == null || article.getDeleted() == 1) {
+            return Result.error("文章不存在");
+        }
+
+        if (!article.getUserId().equals(userId)) {
+            throw new BusinessException(403, "无权限删除他人文章");
+        }
+
+        articleMapper.deleteById(id);
+
+        return Result.success("删除文章成功");
     }
 }
