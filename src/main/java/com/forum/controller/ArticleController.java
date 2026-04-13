@@ -78,4 +78,9 @@ public class ArticleController {
     public Result isLiked(@PathVariable Long id) {
         return articleLikeService.isLiked(id);
     }
+
+    @GetMapping("/hot")
+    public Result hotList(@RequestParam(defaultValue = "10") Integer size) {
+        return articleService.hotList(size);
+    }
 }

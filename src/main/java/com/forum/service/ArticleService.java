@@ -13,4 +13,6 @@ public interface ArticleService {
     Result update(ArticleUpdateDTO articleUpdateDTO,Long userId);
 
     Result delete(Long id,Long userId);
+
+    Result hotList(Integer size);
 }

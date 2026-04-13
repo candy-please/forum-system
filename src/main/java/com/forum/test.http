@@ -1,2 +1,1 @@
-GET http://localhost:8080/article/isLiked/2038143052006088705
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIyMDM3NTE5Mjk4OTI2MzMzOTUzIiwiZXhwIjoxNzc2MDc0NTQ3fQ.nRtv5_UlfmJW8qRO1C_YiXprecWPHTA9pDQvJmQF0EhkVO7woNcAnzLzlTeRayg2_RywXaFlsE6RHWxPlp54GQ
+GET http://localhost:8080/article/hot?size=5

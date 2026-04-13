@@ -21,11 +21,11 @@ import com.forum.utils.LoginUserUtil;
 import com.forum.vo.ArticleDetailVO;
 import com.forum.vo.ArticleVO;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -243,5 +243,64 @@ public class ArticleServiceImpl implements ArticleService {
         articleMapper.deleteById(id);
 
         return Result.success("删除文章成功");
+    }
+
+    @Override
+    public Result hotList(Integer size) {
+
+        Set<ZSetOperations.TypedTuple<String>> typedTuples =
+                stringRedisTemplate.opsForZSet().reverseRangeWithScores(
+                        RedisKeyConstants.ARTICLE_HOT_KEY, 0, size - 1
+                );
+
+        if (typedTuples == null || typedTuples.isEmpty()) {
+            return Result.success("查询热门文章成功", Collections.emptyList());
+        }
+
+        List<ArticleVO> voList = new ArrayList<>();
+
+        for (ZSetOperations.TypedTuple<String> tuple : typedTuples) {
+            if (tuple == null || tuple.getValue() == null) {
+                continue;
+            }
+
+            Long articleId = Long.valueOf(tuple.getValue());
+            Article article = articleMapper.selectById(articleId);
+
+            if (article == null || article.getDeleted() == 1 || article.getStatus() != 1) {
+                continue;
+            }
+
+            ArticleVO vo = new ArticleVO();
+            vo.setId(article.getId());
+            vo.setTitle(article.getTitle());
+            vo.setCategoryId(article.getCategoryId());
+            vo.setUserId(article.getUserId());
+            vo.setViewCount(article.getViewCount());
+            vo.setLikeCount(article.getLikeCount());
+            vo.setCreateTime(article.getCreateTime());
+            vo.setIsLiked(false);
+
+            String content = article.getContent();
+            if (content != null && content.length() > 100) {
+                vo.setSummary(content.substring(0, 100));
+            } else {
+                vo.setSummary(content);
+            }
+
+            Category category = categoryMapper.selectById(article.getCategoryId());
+            if (category != null) {
+                vo.setCategoryName(category.getName());
+            }
+
+            User user = userMapper.selectById(article.getUserId());
+            if (user != null) {
+                vo.setAuthorName(user.getUserName());
+            }
+
+            voList.add(vo);
+        }
+
+        return Result.success("查询热门文章成功", voList);
     }
 }
