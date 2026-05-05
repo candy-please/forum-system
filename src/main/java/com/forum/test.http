@@ -1,1 +1,1 @@
-GET http://localhost:8080/article/hot?size=5
+GET http://localhost:8080/comment/list?articleId=2038143052006088705

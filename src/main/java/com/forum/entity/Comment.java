@@ -18,6 +18,12 @@ public class Comment {
 
     private String content;
 
+    //母级评论ID
+    private Long parentId;
+
+    //回复者ID
+    private Long replyUserId;
+
     private Date createTime;
 
     private Date updateTime;
