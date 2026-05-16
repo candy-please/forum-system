@@ -15,6 +15,7 @@ import com.forum.entity.User;
 import com.forum.mapper.ArticleMapper;
 import com.forum.mapper.CategoryMapper;
 import com.forum.mapper.UserMapper;
+import com.forum.service.ArticleFavoriteService;
 import com.forum.service.ArticleLikeService;
 import com.forum.service.ArticleService;
 import com.forum.utils.LoginUserUtil;
@@ -44,6 +45,9 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Resource
     private ArticleLikeService articleLikeService;
+
+    @Resource
+    private ArticleFavoriteService articleFavoriteService;
 
     public Result add(ArticleAddDTO dto, String userName){
         User user = userMapper.selectOne(
@@ -91,6 +95,7 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         Page<Article> resultPage = articleMapper.selectPage(page, wrapper);
+        Long currentUserId = LoginUserUtil.getCurrentUserIdOrNull();
 
         List<ArticleVO> voList = resultPage.getRecords().stream().map(article -> {
             ArticleVO vo = new ArticleVO();
@@ -109,6 +114,8 @@ public class ArticleServiceImpl implements ArticleService {
             vo.setUserId(article.getUserId());
             vo.setViewCount(article.getViewCount());
             vo.setCreateTime(article.getCreateTime());
+            vo.setIsLiked(currentUserId != null && articleLikeService.hasLiked(article.getId(), currentUserId));
+            vo.setIsFavorited(currentUserId != null && articleFavoriteService.hasFavorited(article.getId(), currentUserId));
 
             Category category = categoryMapper.selectById(article.getCategoryId());
             if (category != null) {
@@ -172,7 +179,7 @@ public class ArticleServiceImpl implements ArticleService {
         } else {
             likeCount = Integer.parseInt(redisLikeCount);
         }
-        vo.setLikeCount(article.getLikeCount());
+        vo.setLikeCount(likeCount);
 
 
         vo.setViewCount(viewCount);
@@ -185,6 +192,12 @@ public class ArticleServiceImpl implements ArticleService {
             isLiked = articleLikeService.hasLiked(article.getId(), currentUserId);
         }
         vo.setIsLiked(isLiked);
+
+        boolean isFavorited = false;
+        if (currentUserId != null) {
+            isFavorited = articleFavoriteService.hasFavorited(article.getId(), currentUserId);
+        }
+        vo.setIsFavorited(isFavorited);
 
         // 分类名称
         Category category = categoryMapper.selectById(article.getCategoryId());
@@ -257,6 +270,7 @@ public class ArticleServiceImpl implements ArticleService {
             return Result.success("查询热门文章成功", Collections.emptyList());
         }
 
+        Long currentUserId = LoginUserUtil.getCurrentUserIdOrNull();
         List<ArticleVO> voList = new ArrayList<>();
 
         for (ZSetOperations.TypedTuple<String> tuple : typedTuples) {
@@ -279,7 +293,8 @@ public class ArticleServiceImpl implements ArticleService {
             vo.setViewCount(article.getViewCount());
             vo.setLikeCount(article.getLikeCount());
             vo.setCreateTime(article.getCreateTime());
-            vo.setIsLiked(false);
+            vo.setIsLiked(currentUserId != null && articleLikeService.hasLiked(article.getId(), currentUserId));
+            vo.setIsFavorited(currentUserId != null && articleFavoriteService.hasFavorited(article.getId(), currentUserId));
 
             String content = article.getContent();
             if (content != null && content.length() > 100) {

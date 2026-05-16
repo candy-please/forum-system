@@ -58,13 +58,21 @@ public class CommentServiceImpl implements CommentService {
         comment.setUserId(user.getId());
         comment.setContent(dto.getContent());
 
+        Long parentId = dto.getParentId() == null ? 0L : dto.getParentId();
 
-        if (dto.getParentId()==null)
-            {comment.setParentId(0L);}
-        else {
-            comment.setParentId(dto.getParentId());
+        if (parentId != 0) {
+            Comment parentComment = commentMapper.selectById(parentId);
+
+            if (parentComment == null || parentComment.getDeleted() == 1) {
+                return Result.error("父评论不存在");
+            }
+
+            if (!parentComment.getArticleId().equals(dto.getArticleId())) {
+                return Result.error("不能回复其他文章下的评论");
+            }
         }
 
+        comment.setParentId(parentId);
         comment.setReplyUserId(dto.getReplyUserId());
 
         comment.setCreateTime(new Date());

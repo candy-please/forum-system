@@ -4,6 +4,7 @@ import com.forum.common.Result;
 import com.forum.dto.ArticleAddDTO;
 import com.forum.dto.ArticleQueryDTO;
 import com.forum.dto.ArticleUpdateDTO;
+import com.forum.service.ArticleFavoriteService;
 import com.forum.service.ArticleLikeService;
 import com.forum.service.ArticleService;
 import org.springframework.security.core.Authentication;
@@ -21,6 +22,9 @@ public class ArticleController {
 
     @Resource
     private ArticleLikeService articleLikeService;
+
+    @Resource
+    private ArticleFavoriteService articleFavoriteService;
 
     @PostMapping("/add")
     public Result add(@RequestBody ArticleAddDTO dto, Authentication authentication) {
@@ -79,6 +83,15 @@ public class ArticleController {
         return articleLikeService.isLiked(id);
     }
 
+    @PostMapping("/favorite/{id}")
+    public Result favorite(@PathVariable Long id) {
+        return articleFavoriteService.favoriteArticle(id);
+    }
+
+    @GetMapping("/isFavorited/{id}")
+    public Result isFavorited(@PathVariable Long id) {
+        return articleFavoriteService.isFavorited(id);
+    }
     @GetMapping("/hot")
     public Result hotList(@RequestParam(defaultValue = "10") Integer size) {
         return articleService.hotList(size);

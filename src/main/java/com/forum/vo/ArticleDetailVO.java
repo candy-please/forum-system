@@ -27,5 +27,7 @@ public class ArticleDetailVO {
 
     private Boolean isLiked;
 
+    private Boolean isFavorited;
+
     private Date createTime;
 }
