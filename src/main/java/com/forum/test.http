@@ -1,1 +1,4 @@
-GET http://localhost:8080/comment/list?articleId=2038143052006088705
+
+### 我的收藏列表
+GET http://localhost:8080/article/favorite/list
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIyMDM3NTE5Mjk4OTI2MzMzOTUzIiwiZXhwIjoxNzc5MDg4MjYwfQ.lxFo1-DSKJh64SlbkHe23ggP18YEggKCZlkte2-5XIvNfOMjMA6QR3FwkMPLntiHMmAmMuNGJG4yOe_lQf8jIQ

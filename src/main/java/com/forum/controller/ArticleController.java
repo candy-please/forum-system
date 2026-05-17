@@ -96,4 +96,9 @@ public class ArticleController {
     public Result hotList(@RequestParam(defaultValue = "10") Integer size) {
         return articleService.hotList(size);
     }
+
+    @GetMapping("/favorite/list")
+    public Result favoriteList() {
+        return articleFavoriteService.favoriteList();
+    }
 }

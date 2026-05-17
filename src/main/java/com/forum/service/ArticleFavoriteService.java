@@ -8,5 +8,5 @@ public interface ArticleFavoriteService {
     Result isFavorited(Long articleId);
     boolean hasFavorited(Long articleId, Long userId);
 
-
+    Result favoriteList();
 }
