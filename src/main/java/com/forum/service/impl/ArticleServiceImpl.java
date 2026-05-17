@@ -1,6 +1,7 @@
 package com.forum.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.forum.common.PageResult;
 import com.forum.common.Result;
@@ -8,6 +9,7 @@ import com.forum.common.exception.BusinessException;
 import com.forum.constants.RedisKeyConstants;
 import com.forum.dto.ArticleAddDTO;
 import com.forum.dto.ArticleQueryDTO;
+import com.forum.dto.ArticleSearchDTO;
 import com.forum.dto.ArticleUpdateDTO;
 import com.forum.entity.Article;
 import com.forum.entity.Category;
@@ -258,6 +260,103 @@ public class ArticleServiceImpl implements ArticleService {
         return Result.success("删除文章成功");
     }
 
+    @Override
+    public Result search(ArticleSearchDTO dto) {
+
+        Page<Article> page = new Page<>(dto.getCurrent(), dto.getSize());
+
+        QueryWrapper<Article> wrapper = new QueryWrapper<>();
+        wrapper.eq("deleted", 0);
+
+        String keyword = dto.getKeyword();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            wrapper.and(w -> w.like("title", keyword)
+                    .or()
+                    .like("content", keyword));
+        }
+
+        if (dto.getCategoryId() != null) {
+            wrapper.eq("category_id", dto.getCategoryId());
+        }
+
+        if ("hot".equals(dto.getSort())) {
+            wrapper.orderByDesc("view_count", "like_count");
+        } else {
+            wrapper.orderByDesc("create_time");
+        }
+
+        IPage<Article> articlePage = articleMapper.selectPage(page, wrapper);
+        List<Article> articles = articlePage.getRecords();
+
+        Page<ArticleVO> voPage = new Page<>(dto.getCurrent(), dto.getSize());
+        voPage.setTotal(articlePage.getTotal());
+        voPage.setSize(articlePage.getSize());
+        voPage.setCurrent(articlePage.getCurrent());
+        voPage.setPages(articlePage.getPages());
+
+        if (articles.isEmpty()) {
+            voPage.setRecords(new ArrayList<>());
+            return Result.success("搜索文章成功", voPage);
+        }
+
+        Set<Long> categoryIds = articles.stream()
+                .map(Article::getCategoryId)
+                .collect(Collectors.toSet());
+
+        Set<Long> userIds = articles.stream()
+                .map(Article::getUserId)
+                .collect(Collectors.toSet());
+
+        Map<Long, String> categoryMap = categoryMapper.selectBatchIds(categoryIds)
+                .stream()
+                .collect(Collectors.toMap(Category::getId, Category::getName));
+
+        Map<Long, String> userMap = userMapper.selectBatchIds(userIds)
+                .stream()
+                .collect(Collectors.toMap(User::getId, User::getUserName));
+
+        List<ArticleVO> voList = articles.stream()
+                .map(article -> buildArticleVO(article, categoryMap, userMap))
+                .collect(Collectors.toList());
+
+        voPage.setRecords(voList);
+
+        return Result.success("搜索文章成功", voPage);
+    }
+
+    private ArticleVO buildArticleVO(Article article,
+                                     Map<Long, String> categoryMap,
+                                     Map<Long, String> userMap) {
+
+        ArticleVO vo = new ArticleVO();
+
+        vo.setId(article.getId());
+        vo.setTitle(article.getTitle());
+        vo.setSummary(buildSummary(article.getContent()));
+
+        vo.setCategoryId(article.getCategoryId());
+        vo.setCategoryName(categoryMap.get(article.getCategoryId()));
+
+        vo.setUserId(article.getUserId());
+        vo.setAuthorName(userMap.get(article.getUserId()));
+
+        vo.setViewCount(article.getViewCount());
+        vo.setLikeCount(article.getLikeCount());
+        vo.setCreateTime(article.getCreateTime());
+
+        // 搜索列表不设置 isLiked / isFavorited
+        return vo;
+    }
+
+    private String buildSummary(String content) {
+        if (content == null) {
+            return "";
+        }
+
+        return content.length() > 100
+                ? content.substring(0, 100)
+                : content;
+    }
     @Override
     public Result hotList(Integer size) {
 

@@ -3,6 +3,7 @@ package com.forum.controller;
 import com.forum.common.Result;
 import com.forum.dto.ArticleAddDTO;
 import com.forum.dto.ArticleQueryDTO;
+import com.forum.dto.ArticleSearchDTO;
 import com.forum.dto.ArticleUpdateDTO;
 import com.forum.service.ArticleFavoriteService;
 import com.forum.service.ArticleLikeService;
@@ -97,6 +98,10 @@ public class ArticleController {
         return articleService.hotList(size);
     }
 
+    @GetMapping("/search")
+    public Result search(@Valid ArticleSearchDTO dto) {
+        return articleService.search(dto);
+    }
     @GetMapping("/favorite/list")
     public Result favoriteList() {
         return articleFavoriteService.favoriteList();

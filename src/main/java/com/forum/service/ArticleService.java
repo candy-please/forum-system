@@ -3,6 +3,7 @@ package com.forum.service;
 import com.forum.common.Result;
 import com.forum.dto.ArticleAddDTO;
 import com.forum.dto.ArticleQueryDTO;
+import com.forum.dto.ArticleSearchDTO;
 import com.forum.dto.ArticleUpdateDTO;
 
 public interface ArticleService {
@@ -14,5 +15,6 @@ public interface ArticleService {
 
     Result delete(Long id,Long userId);
 
+    Result search(ArticleSearchDTO dto);
     Result hotList(Integer size);
 }
