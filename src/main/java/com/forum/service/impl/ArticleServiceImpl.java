@@ -51,12 +51,10 @@ public class ArticleServiceImpl implements ArticleService {
     @Resource
     private ArticleFavoriteService articleFavoriteService;
 
-    public Result add(ArticleAddDTO dto, String userName){
-        User user = userMapper.selectOne(
-                new QueryWrapper<User>().eq("user_name", userName)
-        );
+    public Result add(ArticleAddDTO dto, String userId) {
+        User user = userMapper.selectById(Long.valueOf(userId));
 
-        if (user == null) {
+        if (user == null || user.getDeleted() == 1) {
             return Result.error("当前用户不存在");
         }
 
@@ -72,7 +70,7 @@ public class ArticleServiceImpl implements ArticleService {
         article.setCategoryId(dto.getCategoryId());
         article.setStatus(1);
         article.setViewCount(0);
-
+        article.setLikeCount(0);
         article.setCreateTime(new Date());
         article.setUpdateTime(new Date());
         article.setDeleted(0);
@@ -81,7 +79,6 @@ public class ArticleServiceImpl implements ArticleService {
 
         return Result.success("发布文章成功");
     }
-
     @Override
     public Result list(ArticleQueryDTO dto) {
 
@@ -416,5 +413,17 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         return Result.success("查询热门文章成功", voList);
+    }
+
+    @Override
+    public Result myList(Long userId) {
+        List<Article> list = articleMapper.selectList(
+                new QueryWrapper<Article>()
+                        .eq("user_id", userId)
+                        .eq("deleted", 0)
+                        .orderByDesc("create_time")
+        );
+
+        return Result.success("查询我的文章成功", list);
     }
 }

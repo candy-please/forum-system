@@ -12,20 +12,26 @@ public class GlobalExcpetionHandler {
      * 处理业务异常
      */
     @ExceptionHandler(BusinessException.class)
-    public Result hnadleBusinessException(BusinessException e){
+    public Result<?> handleBusinessException(BusinessException e){
         return Result.error(e.getCode(),e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Result handleValidException(MethodArgumentNotValidException e) {
+    public Result<?> handleValidException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getFieldError().getDefaultMessage();
         return Result.error(400, message);
     }
 
     @ExceptionHandler(BindException.class)
-    public Result handleBindException(BindException e) {
+    public Result<?> handleBindException(BindException e) {
         String message = e.getBindingResult().getFieldError().getDefaultMessage();
         return Result.error(400, message);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public Result<?> handleException(Exception e){
+        e.printStackTrace();
+        return Result.error(500,"系统异常");
     }
 
 }

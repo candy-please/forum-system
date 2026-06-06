@@ -8,7 +8,11 @@ import com.forum.dto.ArticleUpdateDTO;
 import com.forum.service.ArticleFavoriteService;
 import com.forum.service.ArticleLikeService;
 import com.forum.service.ArticleService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -16,6 +20,7 @@ import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/article")
+@Api(tags = "文章管理接口")
 public class ArticleController {
 
     @Resource
@@ -27,7 +32,7 @@ public class ArticleController {
     @Resource
     private ArticleFavoriteService articleFavoriteService;
 
-    @PostMapping("/add")
+  /*  @PostMapping("/add")
     public Result add(@RequestBody ArticleAddDTO dto, Authentication authentication) {
 
         if (authentication == null) {
@@ -37,20 +42,35 @@ public class ArticleController {
         String userName = (String) authentication.getPrincipal();
 
         return articleService.add(dto, userName);
-    }
+    }*/
+  @ApiOperation("发布文章")
+    @PostMapping("/add")
+    public Result add(
+          @ApiParam("文章新增参数") @RequestBody ArticleAddDTO dto) {
 
+        String userId = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal()
+                .toString();
+
+        return articleService.add(dto, userId);
+    }
+    @ApiOperation("分页查询文章列表")
     @GetMapping("/list")
-    public Result list(@Valid ArticleQueryDTO dto) {
+    public Result list( @ApiParam("分页查询参数") @Valid ArticleQueryDTO dto) {
         return articleService.list(dto);
     }
-
+    @ApiOperation("查询文章详情")
     @GetMapping("/detail/{id}")
-    public Result detail(@PathVariable Long id) {
+    public Result detail(@ApiParam(value = "文章ID", example = "1") @PathVariable Long id) {
         return articleService.detail(id);
     }
 
+    @ApiOperation("修改文章")
     @PutMapping("/update")
-    public Result update(@RequestBody @Valid ArticleUpdateDTO articleUpdateDTO,Authentication authentication){
+    public Result update(
+            @ApiParam("文章修改参数")
+            @RequestBody @Valid ArticleUpdateDTO articleUpdateDTO,Authentication authentication){
         if(authentication==null)
         {       return Result.error("用户未登录");
     }
@@ -58,7 +78,7 @@ public class ArticleController {
 
         return articleService.update(articleUpdateDTO,userId);
     }
-
+    @ApiOperation("删除文章")
     @DeleteMapping("/delete/{id}")
     public Result delete(@PathVariable Long id, Authentication authentication) {
         if (authentication == null) {
@@ -69,8 +89,10 @@ public class ArticleController {
         return articleService.delete(id, userId);
     }
 
+
     @PostMapping("/like/{id}")
-    public Result like(@PathVariable Long id) {
+    public Result like(@ApiParam(value="文章ID",example="1")
+                           @PathVariable Long id) {
         return articleLikeService.likeArticle(id);
     }
 
@@ -98,12 +120,24 @@ public class ArticleController {
         return articleService.hotList(size);
     }
 
+    @ApiOperation("文章关键词搜索")
     @GetMapping("/search")
-    public Result search(@Valid ArticleSearchDTO dto) {
+    public Result search(  @ApiParam("搜索关键词")
+                               @Valid ArticleSearchDTO dto) {
         return articleService.search(dto);
     }
     @GetMapping("/favorite/list")
     public Result favoriteList() {
         return articleFavoriteService.favoriteList();
+    }
+    @GetMapping("/myList")
+    public Result myList(Authentication authentication) {
+        if (authentication == null) {
+            return Result.error("用户未登录");
+        }
+
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+
+        return articleService.myList(userId);
     }
 }

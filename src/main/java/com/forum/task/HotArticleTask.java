@@ -21,43 +21,47 @@ public class HotArticleTask {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedDelay = 60000)
     public void syncHotArticles() {
-        QueryWrapper<Article> wrapper = new QueryWrapper<>();
-        wrapper.eq("deleted", 0)
-                .eq("status", 1);
+        try{
+            QueryWrapper<Article> wrapper = new QueryWrapper<>();
+            wrapper.eq("deleted", 0)
+                    .eq("status", 1);
 
-        List<Article> articleList = articleMapper.selectList(wrapper);
-        if (articleList == null || articleList.isEmpty()) {
-            return;
+            List<Article> articleList = articleMapper.selectList(wrapper);
+            if (articleList == null || articleList.isEmpty()) {
+                return;
+            }
+            stringRedisTemplate.delete((RedisKeyConstants.ARTICLE_HOT_KEY));
+            for (Article article : articleList) {
+                Long articleId = article.getId();
+
+                String viewKey = RedisKeyConstants.ARTICLE_VIEW_COUNT_PREFIX + articleId;
+                String likeKey = RedisKeyConstants.ARTICLE_LIKE_COUNT_PREFIX + articleId;
+
+                String redisViewCount = stringRedisTemplate.opsForValue().get(viewKey);
+                String redisLikeCount = stringRedisTemplate.opsForValue().get(likeKey);
+
+                int viewCount = redisViewCount == null ?
+                        (article.getViewCount() == null ? 0 : article.getViewCount())
+                        : Integer.parseInt(redisViewCount);
+
+                int likeCount = redisLikeCount == null ?
+                        (article.getLikeCount() == null ? 0 : article.getLikeCount())
+                        : Integer.parseInt(redisLikeCount);
+
+                double score = viewCount + likeCount * 10.0;
+
+                stringRedisTemplate.opsForZSet().add(
+                        RedisKeyConstants.ARTICLE_HOT_KEY,
+                        articleId.toString(),
+                        score
+                );
+            }
+            System.out.println("热门文章排行同步完成");
+
+        }catch (Exception e){
+            e.printStackTrace();
         }
-
-        for (Article article : articleList) {
-            Long articleId = article.getId();
-
-            String viewKey = RedisKeyConstants.ARTICLE_VIEW_COUNT_PREFIX + articleId;
-            String likeKey = RedisKeyConstants.ARTICLE_LIKE_COUNT_PREFIX + articleId;
-
-            String redisViewCount = stringRedisTemplate.opsForValue().get(viewKey);
-            String redisLikeCount = stringRedisTemplate.opsForValue().get(likeKey);
-
-            int viewCount = redisViewCount == null ?
-                    (article.getViewCount() == null ? 0 : article.getViewCount())
-                    : Integer.parseInt(redisViewCount);
-
-            int likeCount = redisLikeCount == null ?
-                    (article.getLikeCount() == null ? 0 : article.getLikeCount())
-                    : Integer.parseInt(redisLikeCount);
-
-            double score = viewCount + likeCount * 10.0;
-
-            stringRedisTemplate.opsForZSet().add(
-                    RedisKeyConstants.ARTICLE_HOT_KEY,
-                    articleId.toString(),
-                    score
-            );
-        }
-
-        System.out.println("热门文章排行同步完成");
     }
 }

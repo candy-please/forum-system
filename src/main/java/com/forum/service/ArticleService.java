@@ -7,7 +7,7 @@ import com.forum.dto.ArticleSearchDTO;
 import com.forum.dto.ArticleUpdateDTO;
 
 public interface ArticleService {
-    Result add(ArticleAddDTO dto,String username);
+    Result add(ArticleAddDTO dto,String userId);
     Result list(ArticleQueryDTO dto);
     Result detail(Long id);
 
@@ -17,4 +17,6 @@ public interface ArticleService {
 
     Result search(ArticleSearchDTO dto);
     Result hotList(Integer size);
+
+    Result myList(Long userId);
 }

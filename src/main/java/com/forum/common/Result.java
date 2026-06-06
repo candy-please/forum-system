@@ -6,7 +6,7 @@ import lombok.Data;
 public class Result<T> {
     private Integer code;
     private String message;
-    private Object data;
+    private T data;
     public static<T> Result<T> success(String msg,T data){
         Result<T> r=new Result<>();
         r.setCode(200);

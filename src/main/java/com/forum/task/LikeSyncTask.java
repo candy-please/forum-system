@@ -26,40 +26,47 @@ public class LikeSyncTask {
     @Resource
     private ArticleLikeMapper articleLikeMapper;
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedDelay =  60000)
     public void syncLikeData() {
+        try{
         Set<String> countKeys = stringRedisTemplate.keys(RedisKeyConstants.ARTICLE_LIKE_COUNT_PREFIX + "*");
         if (countKeys == null || countKeys.isEmpty()) {
             return;
         }
+            for (String countKey : countKeys) {
+                Long articleId = Long.valueOf(countKey.replace(RedisKeyConstants.ARTICLE_LIKE_COUNT_PREFIX, ""));
+                String redisCount = stringRedisTemplate.opsForValue().get(countKey);
+                int likeCount = redisCount == null ? 0 : Integer.parseInt(redisCount);
 
-        for (String countKey : countKeys) {
-            Long articleId = Long.valueOf(countKey.replace(RedisKeyConstants.ARTICLE_LIKE_COUNT_PREFIX, ""));
-            String redisCount = stringRedisTemplate.opsForValue().get(countKey);
-            int likeCount = redisCount == null ? 0 : Integer.parseInt(redisCount);
-
-            Article article = articleMapper.selectById(articleId);
-            if (article != null && article.getDeleted() == 0) {
+                Article article = articleMapper.selectById(articleId);
+                if (article == null || article.getDeleted() == 1){
+                    continue;
+                }
                 article.setLikeCount(likeCount);
                 articleMapper.updateById(article);
-            }
 
-            String usersKey = RedisKeyConstants.ARTICLE_LIKE_USERS_PREFIX + articleId;
-            Set<String> userIds = stringRedisTemplate.opsForSet().members(usersKey);
+                String usersKey = RedisKeyConstants.ARTICLE_LIKE_USERS_PREFIX + articleId;
+                Set<String> userIds = stringRedisTemplate.opsForSet().members(usersKey);
 
-            // 先删库里该文章的点赞关系，再按 Redis 重建
-            QueryWrapper<ArticleLike> wrapper = new QueryWrapper<>();
-            wrapper.eq("article_id", articleId);
-            articleLikeMapper.delete(wrapper);
+                // 先删库里该文章的点赞关系，再按 Redis 重建
+                QueryWrapper<ArticleLike> wrapper = new QueryWrapper<>();
+                wrapper.eq("article_id", articleId);
+                articleLikeMapper.delete(wrapper);
 
-            if (userIds != null && !userIds.isEmpty()) {
-                for (String userIdStr : userIds) {
-                    ArticleLike articleLike = new ArticleLike();
-                    articleLike.setArticleId(articleId);
-                    articleLike.setUserId(Long.valueOf(userIdStr));
-                    articleLikeMapper.insert(articleLike);
+                if (userIds != null && !userIds.isEmpty()) {
+                    for (String userIdStr : userIds) {
+                        ArticleLike articleLike = new ArticleLike();
+                        articleLike.setArticleId(articleId);
+                        articleLike.setUserId(Long.valueOf(userIdStr));
+                        articleLikeMapper.insert(articleLike);
+                    }
                 }
             }
+            System.out.println("点赞数据同步完成");
+        }catch (Exception e){
+            e.printStackTrace();
         }
+
+
     }
 }
